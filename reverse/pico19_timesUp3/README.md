@@ -17,14 +17,14 @@ This time, we see an important difference... What are those new operators? In th
 
 
 ### Reversing
-#### strace
-Let's see strace.
+#### ltrace
+Let's see ltrace.
 
 > ualarm(10, 0, 0, 2880)
 
 This time we only have 10 microseconds... Doing all of these operations on PicoCTF's toasters sounds unrealistic. This time we're forced to escape SIGALRM as I've shown you in the writeup for Time's Up Again.
 
-There is another very interesting difference in the strace output. This time, we don't see any call to `signal(SIGALRM, SIG_DFL)`, which opens up a new way to avoid SIGALRM: By using `signal(SIGALRM, SIG_IGN)` before our exec.
+There is another very interesting difference in the ltrace output. This time, we don't see any call to `signal(SIGALRM, SIG_DFL)`, which opens up a new way to avoid SIGALRM: By using `signal(SIGALRM, SIG_IGN)` before our exec.
 
 This makes me think that using sigprocmask was not an intended solution for Time's Up Again. We will never know.
 
@@ -99,7 +99,7 @@ You can see this solution in the files exploit.c and tinyexpr.c<br/>
 ### Solution: Bruteforce
 While testing my first solution (solving the expression), I realized that thanks to the bitwise operators, the solution of the expression often ends up being 0.<br/>
 So, instead of actually solving the expression, we can just send '0' a lot of times until we get the flag.<br/>
-Run the program barebones.c until you get the flag.<br/>
+Compile barebones.c and run the program until you get the flag.<br/>
 
 
 ### Credits
