@@ -2,8 +2,6 @@
 Basically, it's a challenge about buffer overflow, but you can only overwrite the EBP.
 We can make EBP point to our input, which enables us to set the return address of the caller of the vulnerable function.
 
-1st leave: pops our fake 
-
 ### Payload
 ```
 aaaaa  // will get popped by 2nd leave
@@ -12,6 +10,7 @@ aaaaa  // will get popped by 2nd leave
 ```
 
 1st leave: pops pointer to EBP register
+
 2nd leave: pops aaaa to ebp, return address will be `<system_gadget>`
 
 
