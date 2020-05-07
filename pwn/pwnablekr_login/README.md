@@ -29,7 +29,8 @@ _BOOL4 __cdecl auth(int a1)
   s2 = (char *)calc_md5((int)&v2, 12);
   printf("hash : %s\n", s2);
   return strcmp("f87cd601aa7fedca99018a8be88eda34", s2) == 0;
-}```
+}
+```
 
 ### Flag
 `control EBP, control ESP, control EIP, control the world~`
