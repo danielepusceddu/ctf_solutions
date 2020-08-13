@@ -1,0 +1,7 @@
+heap
+malloc
+glibc-2.29
+tcache
+realloc
+format_string
+printf
