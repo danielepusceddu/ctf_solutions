@@ -119,12 +119,12 @@ strstr checks if the string contains "iloveyou". Also I assumed that the convers
 So, just input `11iloveyou` and you'll get the flag.
 
 
-natas24:OsRmXFguozKpTZZ5X14zNO43379LZve
+natas24:OsRmXFguozKpTZZ5X14zNO43379LZveg
 After a bit of googling I found out that php's strcmp is very unreliable when one of the parameters isn't a string.
 We can make it so that passwd is an array by sending it as `?passwd[]` in the URL bar.
 
 
-natas25:GHF6X7YwACaYYssHVY05cFq83hRktl4
+natas25:GHF6X7YwACaYYssHVY05cFq83hRktl4c
 The custom `safe_include()` function simply uses a blacklist to try and prevent path traversal.
 As we all know, blacklists are bad. I visited PayloadAllTheThings and found `....//` to escape filters.
 It seems to work, `?lang=....//index-source.html` gives me the source of the page.
