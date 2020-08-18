@@ -153,3 +153,11 @@ print(base64_encode(serialize(new Logger())));
 
 
 natas27:55TBjpPZUUJgVP5b3BnbG6ON9uDPVzCJ
+What caught my attention for this level was the `varchar(64)` for username and password.
+That 64 size limit isn't checked anywhere. If you insert something that goes over 64 characters, it gets truncated.
+`"natas27" = "natas27   "` returns true. So, we can create a `natas27<64_spaces>blah` with a password we like. (Without the blah, it will say there is already a user with that name, because of the earlier equivalence.)
+`natas27<64_spaces>blah` will get truncated to `natas27<many_spaces>`. We can now login using `natas27:ourpassword`
+
+
+natas28:WwR438wkgTsNKBbcJoowyysdM82YjeF
+
