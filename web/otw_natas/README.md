@@ -159,5 +159,5 @@ That 64 size limit isn't checked anywhere. If you insert something that goes ove
 `natas27<64_spaces>blah` will get truncated to `natas27<many_spaces>`. We can now login using `natas27:ourpassword`
 
 
-natas28:WwR438wkgTsNKBbcJoowyysdM82YjeF
+natas28:JWwR438wkgTsNKBbcJoowyysdM82YjeF
 
