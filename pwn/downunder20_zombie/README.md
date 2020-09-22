@@ -36,9 +36,9 @@ let line = lines.next().unwrap().unwrap();
 
 match line.as_str().trim() {
 	"get flag" => continue, // if "get flag", skip this cycle
-	"infect" => infected = Some(infect(&mut lines)),
-	"eat brains" => eat_brains(&mut lines, &mut infected),
-	"inspect brains" => inspect_brains(&mut lines, &mut infected),
+	"infect" => infected = Some(infect(&mut lines)), // calls zombie with user supplied size
+	"eat brains" => eat_brains(&mut lines, &mut infected), // modifies the infected array
+	"inspect brains" => inspect_brains(&mut lines, &mut infected), // views the `nfected array
 	_ => (),
 }
 		println!("{}", line);
@@ -55,7 +55,7 @@ Clearly, what the author wants us to do is to exploit the UAF to change the cont
 * Use `infect` to allocate an `infected` array of X bytes. This array is then freed to the X size tcache bin and used by our next commands.
 * Use `eat brains`, BUT, pad the input with whitespace so that it is X bytes long.
   The string will be allocated using the X size tcache bin, where our array resides! `line` and `infected` now point to the same memory.
-* Finish using the `eat brains` command to modify `infected` so that it starts with `get flag\x00`. This modifies `line` as well.
+* Finish using the `eat brains` command to modify `infected` so that it starts with `get flag  `, spaces included. This modifies `line` as well.
 
 Here's the code to do this. (Full script in exploit.py, in repo)
 
