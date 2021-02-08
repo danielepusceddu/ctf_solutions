@@ -32,7 +32,7 @@ This works and it makes sense but it seemed overly complex for this program, it 
 Turns out that it helps us develop the exploit.
 
 ## The Problem
-Ther problem is exactly with this 'flip' functionality.
+The problem is exactly with this 'flip' functionality.
 Looking at the code of the function, I immediately began to think what would happen in certain edge cases. Here is a commented decompilation of the function.
 ```c
 unsigned __int64 flip()
