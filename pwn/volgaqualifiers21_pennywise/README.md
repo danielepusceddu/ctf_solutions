@@ -4,6 +4,8 @@ Thou shalt not extremely waste memory!
 N.B. In case you're wondering libc is 2.27.
 
 # First Look
+**WARNING: I did not notice an important vulnerability of the challenge. There is a printf format string vuln in the Return Record function. I did not notice it. This exploit does not make use of it. The challenge is probably a bit easier when using that vulnerability.**
+
 When executing the program we are presented with a textual menu, very typical of pwn challenges.
 
 ```
